@@ -13,7 +13,7 @@ def read_requirements():
 
 setup(
     name="eticas",
-    version="0.1.0",
+    version="0.1.8",
     author="Eticas AI",
     author_email="it@eticas.ai",
     description="A Python library for calculating fairness metrics in ML models",
