@@ -6,6 +6,13 @@ authors:
   - name: "Eticas AI"
     email: info@eticas.ai
     website: "https://eticas.ai"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.20446216
+    description: Concept DOI (Zenodo) — resolves to the latest archived version of ITACA.
+  - type: doi
+    value: 10.5281/zenodo.20446217
+    description: Version DOI (Zenodo) for v0.1.8 specifically.
 repository-code: "https://github.com/eticasai/eticas-audit"
 url: "https://pypi.org/project/eticas-audit/"
 abstract: >
