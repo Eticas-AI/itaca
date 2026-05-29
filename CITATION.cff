@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+title: "ITACA — Eticas AI Audit Library"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - name: "Eticas AI"
+    email: info@eticas.ai
+    website: "https://eticas.ai"
+repository-code: "https://github.com/eticasai/eticas-audit"
+url: "https://pypi.org/project/eticas-audit/"
+abstract: >
+  An open-source Python library for calculating fairness metrics and
+  assessing bias in machine learning models. Supports demographic
+  benchmarking monitoring, model fairness monitoring, distribution
+  evaluation, performance analysis, and model drift monitoring across
+  the AI lifecycle.
+keywords:
+  - AI audit
+  - fairness metrics
+  - bias assessment
+  - machine learning
+  - algorithmic accountability
+  - responsible AI
+license: Apache-2.0
+version: 0.1.7
+date-released: "2025-03-31"

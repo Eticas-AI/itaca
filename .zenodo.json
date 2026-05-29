@@ -1,0 +1,27 @@
+{
+  "title": "ITACA — Eticas AI Audit Library",
+  "description": "An open-source Python library for calculating fairness metrics and assessing bias in machine learning models. Supports demographic benchmarking, model fairness monitoring, distribution evaluation, performance analysis, and model drift monitoring across the AI lifecycle.",
+  "license": "Apache-2.0",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Eticas AI",
+      "affiliation": "Eticas AI"
+    }
+  ],
+  "keywords": [
+    "AI audit",
+    "fairness metrics",
+    "bias assessment",
+    "machine learning",
+    "algorithmic accountability",
+    "responsible AI"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://pypi.org/project/eticas-audit/",
+      "relation": "isAlternateIdentifier",
+      "scheme": "url"
+    }
+  ]
+}
