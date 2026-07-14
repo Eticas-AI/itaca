@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/eticasai/eticas-audit/main/docs/eticas.png" width="150">
 </p>
 
-# Eticas: Bias & Audit Framework
+# ITACA: Bias & Audit Framework
 
 
 An open-source Python library designed for developers to calculate fairness metrics and assess bias in machine learning models. This library provides a comprehensive set of tools to ensure transparency, accountability, and ethical AI development.
