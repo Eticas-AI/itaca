@@ -8,9 +8,6 @@
 An open-source Python library designed for developers to calculate fairness metrics and assess bias in machine learning models. This library provides a comprehensive set of tools to ensure transparency, accountability, and ethical AI development.
 
 <p align="center">
-    <a href="https://eticas.ai/itaca/" target="_blank">
-        <img alt="Blog" src="https://img.shields.io/website?up_message=ETICAS AI&url=https://eticas.ai/case-study-category/knowledge-center/">
-    </a>
         <a href="https://github.com/eticasai/eticas-audit/releases">
         <img alt="Github Notes" src="https://img.shields.io/github/v/release/eticasai/eticas-audit">
     </a>
