@@ -127,7 +127,7 @@ class Tdx_inconsistency(BaseFairnessMetric):
                     mask_privileged, mask_underprivileged = get_mask(input_data_dev, filters)
                     data_dev[item[1]['columns'][0]['name']] = mask_underprivileged.astype(int)
                     mask_privileged_2, mask_underprivileged_2 = get_mask(input_data_prod, filters)
-                    data_prod[item[1]['columns'][0]['name']] = mask_underprivileged.astype(int)
+                    data_prod[item[1]['columns'][0]['name']] = mask_underprivileged_2.astype(int)
                     sensitive_columns.append(item[1]['columns'][0]['name'])
 
                 else:
@@ -136,7 +136,7 @@ class Tdx_inconsistency(BaseFairnessMetric):
                         mask_privileged, mask_underprivileged = get_mask(input_data_dev, [filter])
                         data_dev[filter['name']] = mask_underprivileged.astype(int)
                         mask_privileged_2, mask_underprivileged_2 = get_mask(input_data_prod, [filter])
-                        data_prod[filter['name']] = mask_underprivileged.astype(int)
+                        data_prod[filter['name']] = mask_underprivileged_2.astype(int)
                         sensitive_columns.append(filter['name'])
                 feat_columns = train_columns + sensitive_columns
 
