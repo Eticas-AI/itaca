@@ -460,6 +460,19 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(D_parity().normalize_value(0), 0)
         self.assertEqual(D_parity().normalize_value(-1), -120)
 
+    def test_performance_label_column_name(self):
+        """Per-group performance must not depend on the label column being called 'outcome'."""
+        input_data = load_dataset('files/example_training_binary_2.csv').dropna()
+        expected = Performance().compute(input_data.copy(), sensitive_attributes,
+                                         label_column, positive_output, output_column)
+        renamed = input_data.rename(columns={label_column: 'ground_truth'})
+        result = Performance().compute(renamed, sensitive_attributes,
+                                       'ground_truth', positive_output, output_column)
+        for group in ('sex', 'ethnicity', 'age', 'sex_ethnicity'):
+            self.assertNotIn('error', result[group])
+            self.assertEqual(result[group], expected[group])
+        self.assertGreater(result['sex']['accuracy'], 0)
+
     def test_performance(self):
         input_data = load_dataset('files/example_training_scoring.csv')
         input_data = input_data.dropna()
