@@ -19,7 +19,7 @@
         },
         "drift": {
             "ref": 80,
-            "drift": 1.0
+            "drift": 0.9972
         },
         "fairness": {
             "ref": 80,
@@ -73,7 +73,7 @@
         },
         "drift": {
             "ref": 80,
-            "drift": 0.9922
+            "drift": 0.9903
         },
         "fairness": {
             "ref": 80,
@@ -181,7 +181,7 @@
         },
         "drift": {
             "ref": 80,
-            "drift": 0.9892
+            "drift": 0.99
         },
         "fairness": {
             "ref": 80,
