@@ -398,49 +398,49 @@
     "d_calibrated": {
         "sex": {
             "true_calibrated": {
-                "underprivileged": 0.5095,
-                "privileged": 0.4916,
-                "ratio_true": 1.0364,
-                "normalized_risk": 96.36,
+                "underprivileged": 0.4947,
+                "privileged": 0.4923,
+                "ratio_true": 1.0048,
+                "normalized_risk": 99.52,
                 "bias_level": "Low/no bias"
             },
             "false_calibrated": {
-                "underprivileged": 0.5229,
-                "privileged": 0.5161,
-                "ratio_false": 1.0131,
-                "normalized_risk": 98.69,
+                "underprivileged": 0.4919,
+                "privileged": 0.4831,
+                "ratio_false": 1.0182,
+                "normalized_risk": 98.18,
                 "bias_level": "Low/no bias"
             }
         },
         "ethnicity": {
             "true_calibrated": {
-                "underprivileged": 0.5065,
-                "privileged": 0.4995,
-                "ratio_true": 1.014,
-                "normalized_risk": 98.6,
+                "underprivileged": 0.4966,
+                "privileged": 0.4919,
+                "ratio_true": 1.0096,
+                "normalized_risk": 99.04,
                 "bias_level": "Low/no bias"
             },
             "false_calibrated": {
-                "underprivileged": 0.5135,
-                "privileged": 0.5247,
-                "ratio_false": 0.9786,
-                "normalized_risk": 97.86,
+                "underprivileged": 0.4964,
+                "privileged": 0.4829,
+                "ratio_false": 1.028,
+                "normalized_risk": 97.2,
                 "bias_level": "Low/no bias"
             }
         },
         "age": {
             "true_calibrated": {
-                "underprivileged": 0.4934,
-                "privileged": 0.5096,
-                "ratio_true": 0.9682,
-                "normalized_risk": 96.82,
+                "underprivileged": 0.4945,
+                "privileged": 0.4931,
+                "ratio_true": 1.0027,
+                "normalized_risk": 99.73,
                 "bias_level": "Low/no bias"
             },
             "false_calibrated": {
-                "underprivileged": 0.5195,
-                "privileged": 0.5208,
-                "ratio_false": 0.9976,
-                "normalized_risk": 99.76,
+                "underprivileged": 0.4794,
+                "privileged": 0.4957,
+                "ratio_false": 0.9672,
+                "normalized_risk": 96.72,
                 "bias_level": "Low/no bias"
             }
         },
@@ -463,17 +463,17 @@
         },
         "sex_ethnicity": {
             "true_calibrated": {
-                "underprivileged": 0.5016,
-                "privileged": 0.4778,
-                "ratio_true": 1.0499,
-                "normalized_risk": 95.01,
+                "underprivileged": 0.4882,
+                "privileged": 0.4812,
+                "ratio_true": 1.0146,
+                "normalized_risk": 98.54,
                 "bias_level": "Low/no bias"
             },
             "false_calibrated": {
-                "underprivileged": 0.5191,
-                "privileged": 0.5234,
-                "ratio_false": 0.9918,
-                "normalized_risk": 99.18,
+                "underprivileged": 0.4943,
+                "privileged": 0.4732,
+                "ratio_false": 1.0446,
+                "normalized_risk": 95.54,
                 "bias_level": "Low/no bias"
             }
         }
