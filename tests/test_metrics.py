@@ -1,6 +1,7 @@
 # run test python -m unittest discover tests
 
 import logging
+import pandas as pd
 from eticas.metrics.d_calibrated import D_calibrated
 from eticas.metrics.d_equalodds import D_equalodds
 from eticas.metrics.d_parity import D_parity
@@ -608,6 +609,27 @@ class TestMetrics(unittest.TestCase):
             msg="da_fairness equality for sex_ethnicity does not match expected value"
         )
 
+    def test_calibrated_is_predictive_value(self):
+        """Calibration conditions on the prediction (PPV / NPV), unlike equal odds (TPR / FPR)."""
+        input_data = pd.DataFrame({
+            'sex': [1] * 10 + [2] * 10,
+            'outcome':           [1, 1, 1, 0, 0, 0, 0, 0, 0, 0] + [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            'predicted_outcome': [1, 1, 0, 1, 1, 0, 0, 0, 0, 0] + [1, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        })
+        attrs = {'sex': {'columns': [{"name": "sex", "underprivileged": [2]}], 'type': 'simple'}}
+        result = D_calibrated().compute(input_data.copy(), attrs, 'outcome', [1], 'predicted_outcome')
+        # privileged: 4 predicted positive, 2 correct (PPV 0.5); 6 predicted negative, 5 correct (NPV 0.8333)
+        # underprivileged: 2 predicted positive, 1 correct (PPV 0.5); 8 predicted negative, 7 correct (NPV 0.875)
+        self.assertEqual(result['sex']['true_calibrated']['privileged'], 0.5)
+        self.assertEqual(result['sex']['true_calibrated']['underprivileged'], 0.5)
+        self.assertEqual(result['sex']['true_calibrated']['ratio_true'], 1.0)
+        self.assertEqual(result['sex']['false_calibrated']['privileged'], 0.8333)
+        self.assertEqual(result['sex']['false_calibrated']['underprivileged'], 0.875)
+        self.assertEqual(result['sex']['false_calibrated']['ratio_false'], 1.05)
+        equal_odds = D_equalodds().compute(input_data.copy(), attrs, 'outcome', [1], 'predicted_outcome')
+        self.assertNotEqual(result['sex']['true_calibrated']['ratio_true'],
+                            equal_odds['sex']['true_positive_rate']['ratio_true'])
+
     def test_calibrated(self):
 
         input_data = load_dataset('files/example_training_scoring.csv')
@@ -626,17 +648,17 @@ class TestMetrics(unittest.TestCase):
                                         label_column, positive_output, output_column)
         expected_result = {
             'age': {
-                'true_calibrated': 96.82,
-                'false_calibrated': 99.76},
+                'true_calibrated': 99.73,
+                'false_calibrated': 96.72},
             'ethnicity': {
-                'true_calibrated': 98.6,
-                'false_calibrated': 97.86},
+                'true_calibrated': 99.04,
+                'false_calibrated': 97.2},
             'sex': {
-                'true_calibrated': 96.36,
-                'false_calibrated': 98.69},
+                'true_calibrated': 99.52,
+                'false_calibrated': 98.18},
             'sex_ethnicity': {
-                'true_calibrated': 95.01,
-                'false_calibrated': 99.18}
+                'true_calibrated': 98.54,
+                'false_calibrated': 95.54}
         }
 
         # --- Check keys --

@@ -7,8 +7,10 @@ logger = logging.getLogger(__name__)
 
 class D_calibrated(BaseFairnessMetric):
     """
-    Metric D(A)-positive
-    Calculates the distribution of a given group when label is positive.
+    Metric D-calibrated
+    Compares between groups how often a prediction is correct: the positive
+    predictive value (true_calibrated) and the negative predictive value
+    (false_calibrated). Each is reported as the ratio underprivileged / privileged.
     """
 
     def compute(self,
@@ -55,22 +57,27 @@ class D_calibrated(BaseFairnessMetric):
                     filters = np.concat([json_groups[c]['columns'] for c in item[1]['groups']]).tolist()
 
                 mask_privileged, mask_underprivileged = get_mask(input_data, filters)
-                data_underprivileged = input_data[mask_underprivileged].copy()
-                mask_positive_under = data_underprivileged[label_column].isin(positive_output)
-                data_underprivileged_true = data_underprivileged[mask_positive_under]
-                data_underprivileged_false = data_underprivileged[~mask_positive_under]
-                data_privileged = input_data[mask_privileged].copy()
-                mask_positive_privileged = data_privileged[label_column].isin(positive_output)
-                data_privileged_true = data_privileged[mask_positive_privileged]
-                data_privileged_false = data_privileged[~mask_positive_privileged]
-                mask_underprivileged_true = data_underprivileged_true[output_column].isin(positive_output)
-                mask_underprivileged_false = data_underprivileged_false[output_column].isin(positive_output)
-                mask_privileged_true = data_privileged_true[output_column].isin(positive_output)
-                mask_privileged_false = data_privileged_false[output_column].isin(positive_output)
-                underprivileged_true = mask_underprivileged_true.sum() / mask_underprivileged_true.shape[0]
-                underprivileged_false = mask_underprivileged_false.sum() / mask_underprivileged_false.shape[0]
-                privileged_true = mask_privileged_true.sum() / mask_privileged_true.shape[0]
-                privileged_false = mask_privileged_false.sum() / mask_privileged_false.shape[0]
+                data_underprivileged = input_data[mask_underprivileged]
+                data_privileged = input_data[mask_privileged]
+
+                # Calibration conditions on the prediction, not on the label:
+                # true_calibrated compares the positive predictive value
+                # P(label positive | predicted positive) between groups, and
+                # false_calibrated the negative predictive value
+                # P(label negative | predicted negative).
+                pred_positive_under = data_underprivileged[output_column].isin(positive_output)
+                pred_positive_privileged = data_privileged[output_column].isin(positive_output)
+                label_positive_under = data_underprivileged[label_column].isin(positive_output)
+                label_positive_privileged = data_privileged[label_column].isin(positive_output)
+
+                underprivileged_true = (label_positive_under[pred_positive_under].sum()
+                                        / pred_positive_under.sum())
+                privileged_true = (label_positive_privileged[pred_positive_privileged].sum()
+                                   / pred_positive_privileged.sum())
+                underprivileged_false = ((~label_positive_under)[~pred_positive_under].sum()
+                                         / (~pred_positive_under).sum())
+                privileged_false = ((~label_positive_privileged)[~pred_positive_privileged].sum()
+                                    / (~pred_positive_privileged).sum())
                 ratio_true = np.round(underprivileged_true / privileged_true, 4).item()
                 ratio_false = np.round(underprivileged_false / privileged_false, 4).item()
 
