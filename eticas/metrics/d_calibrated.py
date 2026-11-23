@@ -70,33 +70,20 @@ class D_calibrated(BaseFairnessMetric):
                 label_positive_under = data_underprivileged[label_column].isin(positive_output)
                 label_positive_privileged = data_privileged[label_column].isin(positive_output)
 
-                underprivileged_true = (label_positive_under[pred_positive_under].sum()
-                                        / pred_positive_under.sum())
-                privileged_true = (label_positive_privileged[pred_positive_privileged].sum()
-                                   / pred_positive_privileged.sum())
-                underprivileged_false = ((~label_positive_under)[~pred_positive_under].sum()
-                                         / (~pred_positive_under).sum())
-                privileged_false = ((~label_positive_privileged)[~pred_positive_privileged].sum()
-                                    / (~pred_positive_privileged).sum())
-                ratio_true = np.round(underprivileged_true / privileged_true, 4).item()
-                ratio_false = np.round(underprivileged_false / privileged_false, 4).item()
-
+                # A group with no cases for a rate gives 0 / 0: ratio_component reports it as not computable.
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    underprivileged_true = (label_positive_under[pred_positive_under].sum()
+                                            / pred_positive_under.sum())
+                    privileged_true = (label_positive_privileged[pred_positive_privileged].sum()
+                                       / pred_positive_privileged.sum())
+                    underprivileged_false = ((~label_positive_under)[~pred_positive_under].sum()
+                                             / (~pred_positive_under).sum())
+                    privileged_false = ((~label_positive_privileged)[~pred_positive_privileged].sum()
+                                        / (~pred_positive_privileged).sum())
                 result_list.update({group: {
-                                        'true_calibrated': {
-                                            'underprivileged': np.round(underprivileged_true, 4).item(),
-                                            'privileged': np.round(privileged_true, 4).item(),
-                                            'ratio_true': ratio_true,
-                                            'normalized_risk': np.round(self.normalize_value(ratio_true), 4).item(),
-                                            'bias_level': self.get_bias_level(self.normalize_value(ratio_true))
-                                                                },
-                                        'false_calibrated': {
-                                            'underprivileged': np.round(underprivileged_false, 4).item(),
-                                            'privileged': np.round(privileged_false, 4).item(),
-                                            'ratio_false': ratio_false,
-                                            'normalized_risk': np.round(self.normalize_value(ratio_false), 4).item(),
-                                            'bias_level': self.get_bias_level(self.normalize_value(ratio_false))
-                                                                }
-                                                                }})
+                    'true_calibrated': self.ratio_component(underprivileged_true, privileged_true, 'ratio_true'),
+                    'false_calibrated': self.ratio_component(underprivileged_false, privileged_false, 'ratio_false')
+                }})
             except KeyError:
                 # Captura cualquier ValueError lanzado por get_benchmarking
                 logger.error(f"Group no present in data: '{group}'")
