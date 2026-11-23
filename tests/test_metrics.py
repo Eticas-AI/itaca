@@ -317,6 +317,46 @@ class TestMetrics(unittest.TestCase):
         self.assertAlmostEqual(Da_informative().normalize_value(1.19), 62.000000000000014)
         self.assertAlmostEqual(Da_informative().normalize_value(1.21), 59.25)
 
+    def test_selection_rate_metrics_undefined(self):
+        """Disparate Impact and Statistical Parity with rates that cannot be compared."""
+        attrs = {'sex': {'columns': [{"name": "sex", "underprivileged": [2]}], 'type': 'simple'}}
+
+        # no positive outcome in either group: equal rates, parity
+        input_data = pd.DataFrame({'sex': [1] * 5 + [2] * 5, 'predicted_outcome': [0] * 10})
+        result = D_parity().compute(input_data.copy(), attrs, 'predicted_outcome', [1])
+        self.assertEqual(result['sex']['DI'], 1.0)
+        self.assertEqual(result['sex']['normalized_risk'], 100)
+        self.assertEqual(result['sex']['bias_level'], 'Low/no bias')
+        json.dumps(result, allow_nan=False)
+
+        # positives only in the underprivileged group: the ratio is unbounded
+        input_data = pd.DataFrame({'sex': [1] * 5 + [2] * 5, 'predicted_outcome': [0] * 5 + [1, 1, 0, 0, 0]})
+        result = D_parity().compute(input_data.copy(), attrs, 'predicted_outcome', [1])
+        self.assertIsNone(result['sex']['DI'])
+        self.assertEqual(result['sex']['%_positive'], 40.0)
+        self.assertEqual(result['sex']['normalized_risk'], 0)
+        self.assertEqual(result['sex']['bias_level'], 'High bias')
+        json.dumps(result, allow_nan=False)
+
+        # no rows in the underprivileged group: nothing to compare
+        input_data = pd.DataFrame({'sex': [1] * 6, 'predicted_outcome': [1, 0, 1, 0, 1, 0]})
+        for metric, key in ((D_parity(), 'DI'), (D_statisticalparity(), 'SPD')):
+            result = metric.compute(input_data.copy(), attrs, 'predicted_outcome', [1])
+            self.assertIsNone(result['sex'][key])
+            self.assertIsNone(result['sex']['%_positive'])
+            self.assertIsNone(result['sex']['normalized_risk'])
+            self.assertEqual(result['sex']['bias_level'], 'Not computable')
+            json.dumps(result, allow_nan=False)
+
+        # no rows in the privileged group
+        input_data = pd.DataFrame({'sex': [2] * 4, 'predicted_outcome': [1, 0, 0, 0]})
+        for metric, key in ((D_parity(), 'DI'), (D_statisticalparity(), 'SPD')):
+            result = metric.compute(input_data.copy(), attrs, 'predicted_outcome', [1])
+            self.assertIsNone(result['sex'][key])
+            self.assertEqual(result['sex']['%_positive'], 25.0)
+            self.assertEqual(result['sex']['bias_level'], 'Not computable')
+            json.dumps(result, allow_nan=False)
+
     def test_d_statisticalparity(self):
 
         input_data = load_dataset('files/example_training_scoring.csv')
