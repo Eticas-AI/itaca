@@ -52,6 +52,10 @@ class Tdx_inconsistency(BaseFairnessMetric):
         column_output = 'inconsistency'
         # Set random seed
         np.random.seed(123)
+        # Work on copies: the audit adds a column and, per group, replaces the
+        # sensitive columns with group membership. The caller's data must not change.
+        input_data_dev = input_data_dev.copy()
+        input_data_prod = input_data_prod.copy()
         input_data_dev[column_output] = 0
         input_data_prod[column_output] = 1
         len_dev = input_data_dev.shape[0]
@@ -115,8 +119,10 @@ class Tdx_inconsistency(BaseFairnessMetric):
                                         'error': 'only one value target.'
                                         }})
         for item in json_groups.items():
-            data_dev = input_data_dev
-            data_prod = input_data_prod
+            # A copy per group: writing group membership into the shared data would
+            # change the sensitive columns that later groups are defined on.
+            data_dev = input_data_dev.copy()
+            data_prod = input_data_prod.copy()
             group = item[0]
             sensitive_columns = []
 
@@ -138,6 +144,10 @@ class Tdx_inconsistency(BaseFairnessMetric):
                         mask_privileged_2, mask_underprivileged_2 = get_mask(input_data_prod, [filter])
                         data_prod[filter['name']] = mask_underprivileged_2.astype(int)
                         sensitive_columns.append(filter['name'])
+                    # The combined group is the rows underprivileged on every attribute,
+                    # not on the last one of the loop.
+                    mask_privileged, mask_underprivileged = get_mask(input_data_dev, filters)
+                    mask_privileged_2, mask_underprivileged_2 = get_mask(input_data_prod, filters)
                 feat_columns = train_columns + sensitive_columns
 
                 data_dev = data_dev[mask_underprivileged][feat_columns + [column_output]]
