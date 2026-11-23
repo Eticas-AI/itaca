@@ -90,7 +90,9 @@ class D_parity(BaseFairnessMetric):
         elif 1.2 <= x < 2:
             normalized = (x - 1.2) * (60 - 80) / (2 - 1.2) + 80
         elif x >= 2:
-            normalized = 0
+            # Mirror of the x <= 0.5 branch (a ratio x above 1 is scored like 1 / x below 1):
+            # 60 at x = 2, falling towards 0 as the ratio grows. No jump at x = 2.
+            normalized = (1 / x) * (60 - 0) / 0.5
         elif 0.5 < x <= 0.8:
             normalized = (x - 0.5) * (80 - 60) / (0.8 - 0.5) + 60
         elif x <= 0.5:
