@@ -3,7 +3,7 @@ from .base_metric import BaseFairnessMetric
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
 
 import pandas as pd
 from ..utils.helpers import get_mask
@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 class Tdx_inconsistency(BaseFairnessMetric):
     """
     Metric Drift
+
+    A classifier is trained to tell development rows from production rows, for the
+    whole population and for each underprivileged group. If it cannot, there is no
+    drift. Its balanced accuracy (the mean of the accuracy on development rows and on
+    production rows) is divided by 0.5, the balanced accuracy of a guess. The rate
+    goes from 1 (no drift) to 2 (complete drift) whatever the relative size of the
+    two datasets.
     """
 
     def compute(self, sensitive_attrs: dict = None,
@@ -58,10 +65,8 @@ class Tdx_inconsistency(BaseFairnessMetric):
         input_data_prod = input_data_prod.copy()
         input_data_dev[column_output] = 0
         input_data_prod[column_output] = 1
-        len_dev = input_data_dev.shape[0]
-        len_prod = input_data_prod.shape[0]
-        total_len = np.sum([len_dev, len_prod])
-        proportion_data = np.max([len_dev, len_prod]) / total_len
+        # Balanced accuracy of a guess, whatever the sizes of the two datasets.
+        chance_level = 0.5
 
         json_groups = sensitive_attrs
 
@@ -93,16 +98,16 @@ class Tdx_inconsistency(BaseFairnessMetric):
             train_data, test_data = train_test_split(data, test_size=0.3,
                                                      stratify=data[column_output],
                                                      random_state=123)
-            logistic_base = LogisticRegression(random_state=123)
+            logistic_base = LogisticRegression(random_state=123, class_weight='balanced')
             logistic_base.fit(train_data[feat_columns], train_data[column_output])
             predictions_base = logistic_base.predict(test_data[feat_columns])
-            accuracy_base = np.round(accuracy_score(test_data[column_output],
-                                                    predictions_base), 4).item()
-            rate = np.round(accuracy_base / proportion_data, 4).item()
+            accuracy_base = np.round(balanced_accuracy_score(test_data[column_output],
+                                                             predictions_base), 4).item()
+            rate = np.round(accuracy_base / chance_level, 4).item()
             normalized_risk = np.round(self.normalize_value(rate), 4).item()
             result_list.update({group: {
                                 'accuracy': np.round(accuracy_base, 4).item(),
-                                'proportion': np.round(proportion_data, 4).item(),
+                                'proportion': chance_level,
                                 'rate': rate,
                                 'normalized_risk': normalized_risk,
                                 'bias_level': self.get_bias_level(normalized_risk)
@@ -153,23 +158,20 @@ class Tdx_inconsistency(BaseFairnessMetric):
                 data_dev = data_dev[mask_underprivileged][feat_columns + [column_output]]
                 data_prod = data_prod[mask_underprivileged_2][feat_columns + [column_output]]
                 data = pd.concat([data_dev, data_prod])
-                # The accuracy a classifier reaches with no information is the share of the
-                # larger dataset within this group, which differs from the overall share
-                # when the group is not the same size in both datasets.
-                proportion_group = max(len(data_dev), len(data_prod)) / len(data)
                 # Split data (70% train, 30% test) based on the sensitive attribute
                 train_data, test_data = train_test_split(data, test_size=0.3,
                                                          stratify=data[column_output],
                                                          random_state=123)
-                logistic_base = LogisticRegression(random_state=123)
+                logistic_base = LogisticRegression(random_state=123, class_weight='balanced')
                 logistic_base.fit(train_data[feat_columns], train_data[column_output])
                 predictions_base = logistic_base.predict(test_data[feat_columns])
-                accuracy_base = np.round(accuracy_score(test_data[column_output], predictions_base), 4).item()
-                rate = np.round(accuracy_base / proportion_group, 4).item()
+                accuracy_base = np.round(balanced_accuracy_score(test_data[column_output],
+                                                                 predictions_base), 4).item()
+                rate = np.round(accuracy_base / chance_level, 4).item()
                 normalized_risk = np.round(self.normalize_value(rate), 4).item()
                 result_list.update({group: {
                                             'accuracy': np.round(accuracy_base, 4).item(),
-                                            'proportion': np.round(proportion_group, 4).item(),
+                                            'proportion': chance_level,
                                             'rate': rate,
                                             'normalized_risk': normalized_risk,
                                             'bias_level': self.get_bias_level(normalized_risk)

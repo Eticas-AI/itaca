@@ -114,10 +114,36 @@ class DriftInputTests(unittest.TestCase):
 
         # the group goes from half to a quarter of the rows; its features do not change
         smaller = drift(dataset(2, 0.25))
-        self.assertAlmostEqual(smaller["proportion"], 2 / 3, delta=0.02)
+        self.assertEqual(smaller["proportion"], 0.5)
         self.assertEqual(smaller["bias_level"], "Low/no bias")
         self.assertGreater(smaller["normalized_risk"], 90)
 
         # same change of size, and the group's features do shift
         shifted = drift(dataset(2, 0.25, shift=3.0))
         self.assertEqual(shifted["bias_level"], "High bias")
+
+    def test_complete_drift_detected_whatever_the_sizes(self):
+        """Complete drift is 'High bias' even when production is much smaller than development."""
+        sensitive = {"group": {"type": "simple", "columns": [{"name": "group", "underprivileged": [2]}]}}
+
+        def dataset(seed, rows, shift):
+            rng = np.random.default_rng(seed)
+            return pd.DataFrame({
+                "group": [2] * rows,
+                "feature": rng.normal(0, 1, rows) + shift,
+                "outcome": rng.integers(0, 2, rows),
+            })
+
+        for development_rows in (1000, 5000, 9000, 20000):
+            for shift, expected in ((0.0, "Low/no bias"), (10.0, "High bias")):
+                result = Tdx_inconsistency().compute(
+                    sensitive_attrs=sensitive,
+                    input_features=["feature"],
+                    input_data_dev=dataset(1, development_rows, 0.0), output_column_dev="outcome",
+                    input_data_prod=dataset(2, 1000, shift), output_column_prod="outcome",
+                )
+                for key in ("overall", "group"):
+                    self.assertEqual(result[key]["bias_level"], expected,
+                                     msg=f"{development_rows}:1000 rows, shift {shift}, {key}: {result[key]}")
+                if shift:
+                    self.assertLess(result["group"]["normalized_risk"], 5)
