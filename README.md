@@ -51,7 +51,7 @@ This framework is designed to audit AI systems comprehensively across all stages
 - **Model Fairness Monitoring**: Ensure equality and detect equity issues in decision-making.
 - **Features Distribution Evaluation**: Analyze correlations, causality, and variable importance.
 - **Performance Analysis**: Metrics to assess model performance, accuracy, and recall.
-- **Model Drift Monitoring**: Detect and measure changes in data distributions and model behavior over time.
+- **Model Drift Monitoring**: Detect changes in the input data between the training and operational phases, for the whole population and for each underprivileged group.
 
 ## 🌟 <span style="background-color:yellow">ITACA: Monitoring & Auditing Platform</span> 🌟
 
@@ -114,8 +114,8 @@ get_audit(audit_id=id)         # Retrieve details of a specific audit
 | **fairness**               | d_statisticalparity   | no                | Calculate the difference in Selection Rates (Statistical Parity Difference, SPD). It measures the gap in success rates.                                 |
 | **fairness**               | d_calibrated_false    | yes               | Compare between groups how often a negative prediction is correct (negative predictive value).                                                         |
 | **fairness**               | d_calibrated_true     | yes               | Compare between groups how often a positive prediction is correct (positive predictive value).                                                         |
-| **fairness**               | d_equalodds_false     | yes               | Check whether false outcomes are distributed equally among groups.                                                                                      |
-| **fairness**               | d_equalodds_true      | yes               | Check whether true outcomes are distributed equally among groups.                                                                                       |
+| **fairness**               | d_equalodds_false     | yes               | Compare between groups the false positive rate: how often a negative case receives a positive prediction.                                              |
+| **fairness**               | d_equalodds_true      | yes               | Compare between groups the true positive rate: how often a positive case receives a positive prediction.                                               |
 | **Demographic Benchmarking** | da_inconsistency      | no                | Calculate the percentage of samples that belong to an underprivileged group.                                                                            |
 | **Demographic Benchmarking** | da_positive           | no                | Calculate the percentage of samples that receive a positive outcome and belong to an underprivileged group.                                            |
 | **Features Distribution**  | dxa_inconsistency      | no                | Determine if there is a proxy feature in the dataset, meaning some features act as a protected attribute.                                              |
@@ -125,7 +125,7 @@ get_audit(audit_id=id)         # Retrieve details of a specific audit
 | **Performance**            | precision             | yes               | Compute the ratio of true positives to all predicted positives.                                                                                        |
 | **Performance**            | recall                | yes               | Compute the ratio of true positives to all actual positives.                                                                                           |
 | **Performance**            | poor_performance      | yes               | Calculate the accuracy against the representation of the largest class.                                                                                 |
-| **Drift**                  | Drift Train-Operational | no              | Evaluate changes in data or model performance between training and operational phases.                                                                 |
+| **Drift**                  | Drift Train-Operational | no              | Detect a change in the input features between training and operational data, overall and for each underprivileged group. Outcomes are not compared.     |
 
 
 ## 📥 Installation
@@ -151,15 +151,15 @@ pip install eticas-audit
 
 Use a JSON object to define the sensitive attributes. You need to specify the columns where the attribute names and the underprivileged or privileged groups are defined. This definition can include a list to accommodate more than one group.
 
-Sensitive attributes can be simple, for example sex or race. They can also be complex—for instance, the intersection of sex and race.
+Sensitive attributes can be simple, for example sex or race. They can also be complex: a complex attribute compares the rows that are underprivileged on every attribute it combines (for instance, the underprivileged sex and the underprivileged ethnicity) with the rows that are privileged on every one of them. Rows that are privileged on some and underprivileged on others are left out of that comparison.
 
 ```json
 {
     "sensitive_attributes": {
-        "gender": {
+        "sex": {
             "columns": [
                 {
-                    "name": "gender",
+                    "name": "sex",
                     "underprivileged": [2]
                 }
             ],
@@ -183,8 +183,8 @@ Sensitive attributes can be simple, for example sex or race. They can also be co
             ],
             "type": "simple"
         },
-        "gender_ethnicity": {
-            "groups": ["gender", "ethnicity"],
+        "sex_ethnicity": {
+            "groups": ["sex", "ethnicity"],
             "type": "complex"
         }
     }
@@ -293,6 +293,10 @@ model.drift_results
 
 The results can be exported in JSON or DataFrame format. Both options allow you to extract the information with or without normalization. Normalized values range from 0 to 100, where 0 represents a poor result and 100 represents a perfect value.
 
+Each normalized fairness and drift value comes with a bias level: above 80 is "Low/no bias", from 60 to 80 "Medium bias", and 60 or below "High bias". The levels rest on conventional thresholds, such as the four-fifths rule for ratios between groups. They are a reading aid; acceptable values depend on the use case. Values are point estimates, so results for small groups should be read together with the group sizes.
+
+When a metric cannot be computed for a group, for example because the model makes no positive prediction for it, its value is empty and its level is "Not computable".
+
 ```python
 audit_result = model.df_results(norm_values=True)
 ```
@@ -387,11 +391,11 @@ result
 
 | Metric             | Attribute      | 01-labeled     | 02-production  | 03-impact      |
 |--------------------|----------------|----------------|----------------|----------------|
-| d_equality         | age            | 100.0 ▓▓▓▓▓▓   | 100.0 ▓▓▓▓▓▓   | 100.0 ▓▓▓▓▓▓   |
+| da_informative     | age            | 100.0 ▓▓▓▓▓▓   | 100.0 ▓▓▓▓▓▓   | 100.0 ▓▓▓▓▓▓   |
 |                    | ethnicity      | 100.0 ▓▓▓▓▓▓   | 100.0 ▓▓▓▓▓▓   | 72.0  ▓▓▓▓     |
 |                    | sex            | 99.0  ▓▓▓▓▓▓   | 90.0  ▓▓▓▓▓▓   | 60.0  ▓▓▓▓     |
 |                    | sex_ethnicity  | 100.0 ▓▓▓▓▓▓   | 90.0  ▓▓▓▓▓▓   | 60.0  ▓▓▓▓     |
-| d_equity           | age            | 99.0 ▓▓▓▓▓▓    | 98.0  ▓▓▓▓▓▓   | 98.0  ▓▓▓▓▓▓   |
+| dxa_inconsistency  | age            | 99.0 ▓▓▓▓▓▓    | 98.0  ▓▓▓▓▓▓   | 98.0  ▓▓▓▓▓▓   |
 |                    | ethnicity      | 99.0  ▓▓▓▓▓▓   | 89.0  ▓▓▓▓▓▓   | 77.0  ▓▓▓▓     |
 |                    | sex            | 99.0  ▓▓▓▓▓▓   | 77.0  ▓▓▓▓▓▓   | 70.0  ▓▓▓▓     |
 |                    | sex_ethnicity  | 98.0  ▓▓▓▓▓▓   | 86.0  ▓▓▓▓▓▓   | 77.0  ▓▓▓▓     |
@@ -416,11 +420,11 @@ result
 
 | Metric             | Attribute      | 02-production  |
 |--------------------|----------------|----------------|
-| drift              | age            | 1.17 ▓         |
-|                    | ethnicity      | 0.0  ▓         |
+| drift              | age            | 1.46 ▓         |
+|                    | ethnicity      | 0.57 ▓         |
 |                    | overall        | 0.87 ▓         |
 |                    | sex            | 0.0  ▓         |
-|                    | sex_ethnicity  | 1.62 ▓         |
+|                    | sex_ethnicity  | 0.0  ▓         |
 
 
 ### Metrics WITH TRUE LABEL
@@ -444,14 +448,14 @@ result
 
 | Metric             | Attribute      | 01-labeled     |
 |--------------------|----------------|----------------|
-| d_calibrated_false | age            | 99.0  ▓▓▓▓▓▓   |
+| d_calibrated_false | age            | 96.0  ▓▓▓▓▓▓   |
 |                    | ethnicity      | 97.0  ▓▓▓▓▓▓   |
 |                    | sex            | 98.0  ▓▓▓▓▓▓   |
-|                    | sex_ethnicity  | 99.0  ▓▓▓▓▓▓   |
-| d_calibrated_true  | age            | 96.0  ▓▓▓▓▓▓   |
-|                    | ethnicity      | 98.0  ▓▓▓▓▓▓   |
-|                    | sex            | 96.0  ▓▓▓▓▓▓   |
 |                    | sex_ethnicity  | 95.0  ▓▓▓▓▓▓   |
+| d_calibrated_true  | age            | 99.0  ▓▓▓▓▓▓   |
+|                    | ethnicity      | 99.0  ▓▓▓▓▓▓   |
+|                    | sex            | 99.0  ▓▓▓▓▓▓   |
+|                    | sex_ethnicity  | 98.0  ▓▓▓▓▓▓   |
 | d_equalodds_false  | age            | 99.0  ▓▓▓▓▓▓   |
 |                    | ethnicity      | 97.0  ▓▓▓▓▓▓   |
 |                    | sex            | 98.0  ▓▓▓▓▓▓   |
