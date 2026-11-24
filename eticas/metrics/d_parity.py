@@ -56,10 +56,33 @@ class D_parity(BaseFairnessMetric):
                 mask_underprivileged = input_data_underprivileged[label_column].isin(positive_output)
                 mask_privileged = input_data_privileged[label_column].isin(positive_output)
                 # item is to convert np float64 to native python float.
+                if mask_underprivileged.shape[0] == 0 or mask_privileged.shape[0] == 0:
+                    # A group with no rows has no selection rate: nothing to compare.
+                    p_positive = None
+                    if mask_underprivileged.shape[0] > 0:
+                        p_positive = np.round(mask_underprivileged.mean()*100, 1).item()
+                    result_list.update({group: {'DI': None,
+                                                '%_positive': p_positive,
+                                                'normalized_risk': None,
+                                                'bias_level': 'Not computable',
+                                                'note': 'not computable: a group has no rows.'}})
+                    continue
                 data_underprivileged = mask_underprivileged.sum() / mask_underprivileged.shape[0]
                 p_positive = np.round(data_underprivileged*100, 1).item()
                 data_privileged = mask_privileged.sum() / mask_privileged.shape[0]
-                DI = np.round(data_underprivileged / data_privileged, 2).item()
+                if data_privileged == 0 and data_underprivileged > 0:
+                    # The ratio is unbounded: the lowest score, and no ratio to report.
+                    result_list.update({group: {'DI': None,
+                                                '%_positive': p_positive,
+                                                'normalized_risk': 0,
+                                                'bias_level': self.get_bias_level(0),
+                                                'note': 'ratio unbounded: the privileged rate is 0.'}})
+                    continue
+                if data_privileged == 0:
+                    # Equal rates of 0: parity, although the ratio 0 / 0 is undefined.
+                    DI = 1.0
+                else:
+                    DI = np.round(data_underprivileged / data_privileged, 2).item()
                 normalized_risk = self.normalize_value(DI)
                 bias_level = self.get_bias_level(normalized_risk)
                 result_list.update({group: {'DI': DI,

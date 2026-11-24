@@ -54,6 +54,17 @@ class D_statisticalparity(BaseFairnessMetric):
                 mask_underprivileged = input_data_underprivileged[label_column].isin(positive_output)
                 mask_privileged = input_data_privileged[label_column].isin(positive_output)
                 # item is to convert np float64 to native python float.
+                if mask_underprivileged.shape[0] == 0 or mask_privileged.shape[0] == 0:
+                    # A group with no rows has no selection rate: nothing to compare.
+                    p_positive = None
+                    if mask_underprivileged.shape[0] > 0:
+                        p_positive = np.round(mask_underprivileged.mean()*100, 1).item()
+                    result_list.update({group: {'SPD': None,
+                                                '%_positive': p_positive,
+                                                'normalized_risk': None,
+                                                'bias_level': 'Not computable',
+                                                'note': 'not computable: a group has no rows.'}})
+                    continue
                 data_underprivileged = mask_underprivileged.sum() / mask_underprivileged.shape[0]
                 p_positive = np.round(data_underprivileged*100, 1).item()
                 data_privileged = mask_privileged.sum() / mask_privileged.shape[0]
