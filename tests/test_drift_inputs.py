@@ -88,3 +88,36 @@ class DriftInputTests(unittest.TestCase):
         )
         pd.testing.assert_frame_equal(development, before_dev)
         pd.testing.assert_frame_equal(production, before_prod)
+
+    def test_group_size_change_is_not_drift(self):
+        """A group that changes size, with unchanged features, is not reported as drifting."""
+        sensitive = {"group": {"type": "simple", "columns": [{"name": "group", "underprivileged": [2]}]}}
+
+        def dataset(seed, share, shift=0.0):
+            rng = np.random.default_rng(seed)
+            data = pd.DataFrame({
+                "group": np.where(rng.random(6000) < share, 2, 1),
+                "feature_1": rng.normal(0, 1, 6000),
+                "feature_2": rng.normal(0, 1, 6000),
+                "outcome": rng.integers(0, 2, 6000),
+            })
+            data.loc[data.group == 2, "feature_1"] += shift
+            return data
+
+        def drift(production):
+            return Tdx_inconsistency().compute(
+                sensitive_attrs=sensitive,
+                input_features=["feature_1", "feature_2"],
+                input_data_dev=dataset(1, 0.5), output_column_dev="outcome",
+                input_data_prod=production, output_column_prod="outcome",
+            )["group"]
+
+        # the group goes from half to a quarter of the rows; its features do not change
+        smaller = drift(dataset(2, 0.25))
+        self.assertAlmostEqual(smaller["proportion"], 2 / 3, delta=0.02)
+        self.assertEqual(smaller["bias_level"], "Low/no bias")
+        self.assertGreater(smaller["normalized_risk"], 90)
+
+        # same change of size, and the group's features do shift
+        shifted = drift(dataset(2, 0.25, shift=3.0))
+        self.assertEqual(shifted["bias_level"], "High bias")

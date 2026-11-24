@@ -153,6 +153,10 @@ class Tdx_inconsistency(BaseFairnessMetric):
                 data_dev = data_dev[mask_underprivileged][feat_columns + [column_output]]
                 data_prod = data_prod[mask_underprivileged_2][feat_columns + [column_output]]
                 data = pd.concat([data_dev, data_prod])
+                # The accuracy a classifier reaches with no information is the share of the
+                # larger dataset within this group, which differs from the overall share
+                # when the group is not the same size in both datasets.
+                proportion_group = max(len(data_dev), len(data_prod)) / len(data)
                 # Split data (70% train, 30% test) based on the sensitive attribute
                 train_data, test_data = train_test_split(data, test_size=0.3,
                                                          stratify=data[column_output],
@@ -161,11 +165,11 @@ class Tdx_inconsistency(BaseFairnessMetric):
                 logistic_base.fit(train_data[feat_columns], train_data[column_output])
                 predictions_base = logistic_base.predict(test_data[feat_columns])
                 accuracy_base = np.round(accuracy_score(test_data[column_output], predictions_base), 4).item()
-                rate = np.round(accuracy_base / proportion_data, 4).item()
+                rate = np.round(accuracy_base / proportion_group, 4).item()
                 normalized_risk = np.round(self.normalize_value(rate), 4).item()
                 result_list.update({group: {
                                             'accuracy': np.round(accuracy_base, 4).item(),
-                                            'proportion': np.round(proportion_data, 4).item(),
+                                            'proportion': np.round(proportion_group, 4).item(),
                                             'rate': rate,
                                             'normalized_risk': normalized_risk,
                                             'bias_level': self.get_bias_level(normalized_risk)
