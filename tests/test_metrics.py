@@ -917,48 +917,17 @@ class TestMetrics(unittest.TestCase):
         result = Tdx_inconsistency().compute(sensitive_attributes, features,
                                              input_data, output_column, output_column,
                                              input_data, output_column, output_column)
-        expected_result = {
-            'age': {
-                'normalized_risk': 100.0},
-            'ethnicity': {
-                'normalized_risk': 100.0},
-            'sex': {
-                'normalized_risk': 100.0},
-            'sex_ethnicity': {
-                'normalized_risk': 100.0}
-        }
-
-        # --- Check keys ---
-        self.assertIn("age", result)
-        self.assertIn("ethnicity", result)
-        self.assertIn("sex", result)
-        self.assertIn("sex_ethnicity", result)
-
-        # --- Check numeric values (using assertAlmostEqual for floats) ---
-        self.assertAlmostEqual(
-            result["age"]["normalized_risk"],
-            expected_result["age"]["normalized_risk"],
-            places=7,
-            msg="Tdx_inconsistency for age does not match expected value"
-        )
-        self.assertAlmostEqual(
-            result["sex"]["normalized_risk"],
-            expected_result["sex"]["normalized_risk"],
-            places=7,
-            msg="Tdx_inconsistency for sex does not match expected value"
-        )
-        self.assertAlmostEqual(
-            result["ethnicity"]["normalized_risk"],
-            expected_result["ethnicity"]["normalized_risk"],
-            places=7,
-            msg="Tdx_inconsistency for ethnicity does not match expected value"
-        )
-        self.assertAlmostEqual(
-            result["sex_ethnicity"]["normalized_risk"],
-            expected_result["sex_ethnicity"]["normalized_risk"],
-            places=7,
-            msg="Tdx_inconsistency for sex_ethnicity does not match expected value"
-        )
+        # The same data as development and as production: no drift. The classifier
+        # cannot tell the two apart, so its accuracy stays close to chance and the
+        # score close to 100, for the whole population and for every group.
+        for group in ("overall", "age", "sex", "ethnicity", "sex_ethnicity"):
+            self.assertIn(group, result)
+            self.assertNotIn("error", result[group], msg=f"Tdx_inconsistency for {group} was not computed")
+            self.assertAlmostEqual(result[group]["accuracy"], 0.5, delta=0.05,
+                                   msg=f"Tdx_inconsistency for {group}: accuracy is not at chance level")
+            self.assertGreater(result[group]["normalized_risk"], 95,
+                               msg=f"Tdx_inconsistency for {group} does not match expected value")
+            self.assertEqual(result[group]["bias_level"], "Low/no bias")
 
         self.assertAlmostEqual(Tdx_inconsistency().normalize_value(1.0), 100)
         self.assertAlmostEqual(Tdx_inconsistency().normalize_value(1.09), 81.99999999999999)

@@ -52,6 +52,10 @@ class Tdx_inconsistency(BaseFairnessMetric):
         column_output = 'inconsistency'
         # Set random seed
         np.random.seed(123)
+        # Work on copies: the audit adds a column and, per group, replaces the
+        # sensitive columns with group membership. The caller's data must not change.
+        input_data_dev = input_data_dev.copy()
+        input_data_prod = input_data_prod.copy()
         input_data_dev[column_output] = 0
         input_data_prod[column_output] = 1
         len_dev = input_data_dev.shape[0]
@@ -115,8 +119,10 @@ class Tdx_inconsistency(BaseFairnessMetric):
                                         'error': 'only one value target.'
                                         }})
         for item in json_groups.items():
-            data_dev = input_data_dev
-            data_prod = input_data_prod
+            # A copy per group: writing group membership into the shared data would
+            # change the sensitive columns that later groups are defined on.
+            data_dev = input_data_dev.copy()
+            data_prod = input_data_prod.copy()
             group = item[0]
             sensitive_columns = []
 
@@ -138,11 +144,19 @@ class Tdx_inconsistency(BaseFairnessMetric):
                         mask_privileged_2, mask_underprivileged_2 = get_mask(input_data_prod, [filter])
                         data_prod[filter['name']] = mask_underprivileged_2.astype(int)
                         sensitive_columns.append(filter['name'])
+                    # The combined group is the rows underprivileged on every attribute,
+                    # not on the last one of the loop.
+                    mask_privileged, mask_underprivileged = get_mask(input_data_dev, filters)
+                    mask_privileged_2, mask_underprivileged_2 = get_mask(input_data_prod, filters)
                 feat_columns = train_columns + sensitive_columns
 
                 data_dev = data_dev[mask_underprivileged][feat_columns + [column_output]]
                 data_prod = data_prod[mask_underprivileged_2][feat_columns + [column_output]]
                 data = pd.concat([data_dev, data_prod])
+                # The accuracy a classifier reaches with no information is the share of the
+                # larger dataset within this group, which differs from the overall share
+                # when the group is not the same size in both datasets.
+                proportion_group = max(len(data_dev), len(data_prod)) / len(data)
                 # Split data (70% train, 30% test) based on the sensitive attribute
                 train_data, test_data = train_test_split(data, test_size=0.3,
                                                          stratify=data[column_output],
@@ -151,11 +165,11 @@ class Tdx_inconsistency(BaseFairnessMetric):
                 logistic_base.fit(train_data[feat_columns], train_data[column_output])
                 predictions_base = logistic_base.predict(test_data[feat_columns])
                 accuracy_base = np.round(accuracy_score(test_data[column_output], predictions_base), 4).item()
-                rate = np.round(accuracy_base / proportion_data, 4).item()
+                rate = np.round(accuracy_base / proportion_group, 4).item()
                 normalized_risk = np.round(self.normalize_value(rate), 4).item()
                 result_list.update({group: {
                                             'accuracy': np.round(accuracy_base, 4).item(),
-                                            'proportion': np.round(proportion_data, 4).item(),
+                                            'proportion': np.round(proportion_group, 4).item(),
                                             'rate': rate,
                                             'normalized_risk': normalized_risk,
                                             'bias_level': self.get_bias_level(normalized_risk)
