@@ -103,7 +103,7 @@ class Performance(BaseFairnessMetric):
                 if (precision + recall) > 0:
                     f1 = np.round(2 * (precision * recall) / (precision + recall), 4).item()
 
-                largest_class_frequency = np.round(data['outcome'].value_counts().max() / len(data), 4).item()
+                largest_class_frequency = np.round(data[label_column].value_counts().max() / len(data), 4).item()
                 poor_performance = np.round(accuracy / largest_class_frequency, 4).item()
                 normalized_risk = self.normalize_value(poor_performance)
                 result_list.update({group: {
