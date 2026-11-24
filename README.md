@@ -130,10 +130,17 @@ get_audit(audit_id=id)         # Retrieve details of a specific audit
 
 ## 📥 Installation
 
-
+> [!WARNING]
+> The `eticas-audit` package on PyPI is at version 0.1.7. It predates corrections to the fairness and drift metrics (see the [0.1.10 release notes](https://github.com/Eticas-AI/itaca/releases/tag/v0.1.10)). Until PyPI is updated, install the latest release from GitHub:
 
 ```bash
-pip install eticas-audit
+pip install "eticas-audit @ https://github.com/Eticas-AI/itaca/archive/refs/tags/v0.1.10.tar.gz"
+```
+
+To check the installed version:
+
+```bash
+python -c "import eticas; print(eticas.__version__)"
 ```
 
 ## Example Notebooks
